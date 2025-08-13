@@ -9,3 +9,37 @@
         upgrade: yes
         update_cache: yes
 
+    # Check if reboot is required
+    - name: check if system reboot is required
+      become: true
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+
+    # Send Gotify message when reboot is required
+    - name: Send Gotify notification
+      uri:
+        url: "{{ gotify_url }}/message?token={{ gotify_token }}"
+        method: POST
+        body_format: json
+        body:
+          title: "Reboot Required"
+          message: "Reboot required on {{ inventory_hostname }}"
+          priority: 5
+        headers:
+          Content-Type: application/json
+        status_code: 200
+      when: reboot_required.stat.exists
+      
+    - name: Send Gotify notification when playbook finishes
+      uri:
+        url: "{{ gotify_url }}/message?token={{ gotify_token }}"
+        method: POST
+        body_format: json
+        body:
+          title: "Playbook Finished"
+          message: "Playbook finished running on {{ inventory_hostname }}"
+          priority: 3
+        headers:
+          Content-Type: application/json
+        status_code: 200
